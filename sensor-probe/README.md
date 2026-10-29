@@ -98,6 +98,25 @@ Garmin Express is not needed.
    GNSS).
 5. Plug back in and copy `GARMIN/APPS/LOGS/SENSORPROBE.TXT` off the watch.
 
+### Without a USB data cable
+
+Export a store package and install it as a private beta:
+
+```sh
+monkeyc -e -r -f monkey.jungle -o SensorProbe.iq -y ~/.garmin/developer_key.der
+```
+
+Upload `SensorProbe.iq` as a **Beta App** at <https://apps.garmin.com/developer/upload>
+(visible only to your account, no review), then install it from the Connect IQ
+app on the phone. The log file cannot be retrieved this way, so read the
+per-phase summary lines on the watch screen instead.
+
+### Simulator notes
+
+The simulator does not generate high-rate sensor data on its own, so every
+listener phase reports *no data* there unless sensor playback is set up. A
+simulator run only proves the app completes without crashing.
+
 ## Turn the log into a report
 
 ```sh
