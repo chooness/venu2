@@ -21,6 +21,10 @@ class Runner {
 
     function buildPlan() as Void {
         steps = [];
+        var stores = Inventory.historyStores();
+        for (var i = 0; i < stores.size(); i++) {
+            steps.add({ :kind => :hist, :store => stores[i], :secs => 0 });
+        }
         var maxHz = (Sensor has :getMaxSampleRate) ? Sensor.getMaxSampleRate() : 25;
         var rates = [];
         for (var i = 0; i < Config.CANDIDATE_RATES.size(); i++) {
@@ -55,9 +59,8 @@ class Runner {
         var clock = System.getClockTime();
         Log.emit("META", ["sensor-probe", Config.VERSION, clock.hour + ":" + clock.min + ":" + clock.sec,
             Config.HF_SECS, Config.HBI_SECS, Config.INFO_SECS, Config.POS_SECS, Config.HF_PERIOD_S, Config.LOG_RAW]);
-        results = ["-- history --"];
-        results.addAll(Inventory.run());
-        results.add("-- live --");
+        results = [];
+        Inventory.run();
         buildPlan();
         Log.emit("PLAN", [steps.size()]);
         running = true;
@@ -116,6 +119,8 @@ class Runner {
         var s = steps[idx];
         if (s[:kind] == :hf) {
             probe = new HfProbe("p" + idx, s[:ch], s[:rate]);
+        } else if (s[:kind] == :hist) {
+            probe = new HistProbe(s[:store]);
         } else if (s[:kind] == :info) {
             probe = new InfoProbe();
         } else {
@@ -148,7 +153,7 @@ class Runner {
         }
         var s = steps[idx];
         var el = (System.getTimer() - phaseStart) / 1000;
-        var what = s[:kind] == :hf ? probe.chanNames().toString() + "@" + s[:rate] : (s[:kind] == :info ? "1Hz info" : "gps");
+        var what = s[:kind] == :hf ? probe.chanNames().toString() + "@" + s[:rate] : (s[:kind] == :info ? "1Hz info" : (s[:kind] == :hist ? "history" : "gps"));
         return (idx + 1) + "/" + steps.size() + " " + what + " " + el + "/" + s[:secs] + "s";
     }
 }

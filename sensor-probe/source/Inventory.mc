@@ -9,14 +9,47 @@ import Toybox.Time;
 // HIST lines; nothing here assumes a capability exists before checking.
 module Inventory {
 
-    function run() as Array {
+    // History stores are read later, one per Runner step (HistProbe):
+    // reading them all in one call trips the watchdog.
+    function run() as Void {
         device();
         apis();
         snapshot();
         activity();
-        var out = [];
-        history(out);
-        return out;
+    }
+
+    function historyStores() as Array {
+        var a = [];
+        if (Toybox has :SensorHistory) {
+            if (SensorHistory has :getHeartRateHistory) { a.add("heart_rate"); }
+            if (SensorHistory has :getTemperatureHistory) { a.add("temperature"); }
+            if (SensorHistory has :getPressureHistory) { a.add("pressure"); }
+            if (SensorHistory has :getElevationHistory) { a.add("elevation"); }
+            if (SensorHistory has :getOxygenSaturationHistory) { a.add("spo2"); }
+            if (SensorHistory has :getBodyBatteryHistory) { a.add("body_battery"); }
+            if (SensorHistory has :getStressHistory) { a.add("stress"); }
+        }
+        if (ActivityMonitor has :getHeartRateHistory) {
+            a.add("am_heart_rate");
+        }
+        return a;
+    }
+
+    function readHistory(name as String, out as Array) as Void {
+        if (name.equals("am_heart_rate")) {
+            amHrHistory(out);
+            return;
+        }
+        var opts = { :period => Config.HISTORY_MAX, :order => SensorHistory.ORDER_NEWEST_FIRST };
+        var it = null;
+        if (name.equals("heart_rate")) { it = SensorHistory.getHeartRateHistory(opts); }
+        else if (name.equals("temperature")) { it = SensorHistory.getTemperatureHistory(opts); }
+        else if (name.equals("pressure")) { it = SensorHistory.getPressureHistory(opts); }
+        else if (name.equals("elevation")) { it = SensorHistory.getElevationHistory(opts); }
+        else if (name.equals("spo2")) { it = SensorHistory.getOxygenSaturationHistory(opts); }
+        else if (name.equals("body_battery")) { it = SensorHistory.getBodyBatteryHistory(opts); }
+        else if (name.equals("stress")) { it = SensorHistory.getStressHistory(opts); }
+        hist(name, it, out);
     }
 
     function device() as Void {
@@ -96,24 +129,9 @@ module Inventory {
         Log.emit("SNAP", ["ActivityMonitor.Info." + name, v]);
     }
 
-    // History stores: sample count, time span and median-ish spacing tell us
-    // the background logging rate of each store.
-    function history(out as Array) as Void {
-        if (Toybox has :SensorHistory) {
-            var opts = { :period => Config.HISTORY_MAX, :order => SensorHistory.ORDER_NEWEST_FIRST };
-            if (SensorHistory has :getHeartRateHistory) { hist("heart_rate", SensorHistory.getHeartRateHistory(opts), out); }
-            if (SensorHistory has :getTemperatureHistory) { hist("temperature", SensorHistory.getTemperatureHistory(opts), out); }
-            if (SensorHistory has :getPressureHistory) { hist("pressure", SensorHistory.getPressureHistory(opts), out); }
-            if (SensorHistory has :getElevationHistory) { hist("elevation", SensorHistory.getElevationHistory(opts), out); }
-            if (SensorHistory has :getOxygenSaturationHistory) { hist("spo2", SensorHistory.getOxygenSaturationHistory(opts), out); }
-            if (SensorHistory has :getBodyBatteryHistory) { hist("body_battery", SensorHistory.getBodyBatteryHistory(opts), out); }
-            if (SensorHistory has :getStressHistory) { hist("stress", SensorHistory.getStressHistory(opts), out); }
-        }
-        if (ActivityMonitor has :getHeartRateHistory) {
-            amHrHistory(out);
-        }
-    }
-
+    // Sample count, time span and average spacing give the background
+    // logging rate of each store. Spacing uses min/max time because not every
+    // store honours ORDER_NEWEST_FIRST.
     function hist(name as String, it, out as Array) as Void {
         if (it == null) {
             Log.emit("HIST", ["SensorHistory." + name, 0]);
@@ -134,10 +152,12 @@ module Inventory {
             }
             if (s.when != null) {
                 var w = s.when.value();
-                if (newest == null) {
+                if (newest == null || w > newest) {
                     newest = w;
                 }
-                oldest = w;
+                if (oldest == null || w < oldest) {
+                    oldest = w;
+                }
             }
             s = it.next();
         }
@@ -161,10 +181,13 @@ module Inventory {
                 invalid += 1;
             }
             if (s.when != null) {
-                if (newest == null) {
-                    newest = s.when.value();
+                var w = s.when.value();
+                if (newest == null || w > newest) {
+                    newest = w;
                 }
-                oldest = s.when.value();
+                if (oldest == null || w < oldest) {
+                    oldest = w;
+                }
             }
             s = it.next();
         }

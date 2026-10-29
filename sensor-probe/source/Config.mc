@@ -30,5 +30,5 @@ module Config {
     // not need coordinates and the log may be copied around.
     const LOG_COORDS = false;
     // Max samples read from each SensorHistory / ActivityMonitor history.
-    const HISTORY_MAX = 600;
+    const HISTORY_MAX = 400;
 }
