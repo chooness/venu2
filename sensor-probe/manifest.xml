@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <!-- Device app ("watch-app"): the only app type allowed to use
+         Sensor.registerSensorDataListener without risk of a crash. -->
+    <iq:application id="d492f90226a3484c911e230f851f7f04" type="watch-app" name="@Strings.AppName"
+        entry="SensorProbeApp" launcherIcon="@Drawables.LauncherIcon"
+        minApiLevel="3.3.0">
+        <iq:products>
+            <iq:product id="venu2"/>
+            <iq:product id="venu2s"/>
+            <iq:product id="venu2plus"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Sensor"/>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="Positioning"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>
