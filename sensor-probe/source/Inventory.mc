@@ -58,9 +58,9 @@ module Inventory {
         }
         api("ActivityMonitor.getHeartRateHistory", ActivityMonitor has :getHeartRateHistory);
         api("Toybox.Position", Toybox has :Position);
-        api("Toybox.Communications", Toybox has :Communications);
-        api("Toybox.ActivityRecording", Toybox has :ActivityRecording);
-        api("Toybox.FitContributor", Toybox has :FitContributor);
+        // Communications, ActivityRecording and FitContributor are not
+        // probed: even a `has` check on them crashes without their manifest
+        // permission (seen in the simulator).
         api("Toybox.Attention", Toybox has :Attention);
     }
 
