@@ -1,0 +1,7 @@
+bin/
+*.der
+*.pem
+*.prg
+*.prg.debug.xml
+.DS_Store
+__pycache__/
